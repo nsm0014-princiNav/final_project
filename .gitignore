@@ -1,3 +1,4 @@
 # nsm-0014_princiNav/final_project root .gitignore
 *.asv
 .vscode
+*.bag

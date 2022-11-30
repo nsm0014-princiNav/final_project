@@ -97,7 +97,7 @@ estiRoll(1)  = IMU.ini_align(1);
 estiPitch(1) = IMU.ini_align(2);
 estiYaw(1)   = IMU.ini_align(3);
 C_n_b = genDCM('rad',[estiYaw(1) estiPitch(1) estiRoll(1)],[3 2 1]);
-c_b_n = C_n_b';
+C_b_n = C_n_b';
 
 % Initial velocity
 estiVelo(1,:) = GPS.vel(1,:);
@@ -122,19 +122,19 @@ omega_en_n = imu.transportRate(estiLat(1), estiVelo(1,1), estiVelo(1,2), estiAlt
 gn_e(1,:) = imu.gravity(estiLat(1), estiAlt(1));
 
 % Prior estimates
-kf.xi = [ zeros(1,9), imu.gb_dyn, imu.ab_dyn ]';  % Error vector state
-kf.Pi = diag([imu.ini_align_err, gnss.stdv, gnss.std, imu.gb_dyn, imu.ab_dyn].^2);
+kf.xi = [zeros(1,9), IMU.gb_dyn, IMU.ab_dyn ]';  % Error vector state
+kf.Pi = diag([IMU.ini_align_error, GPS.stdv, GPS.std, IMU.gb_dyn, IMU.ab_dyn].^2);
 
-kf.Q  = diag([imu.arw, imu.vrw, imu.gb_psd, imu.ab_psd].^2);
+kf.Q  = diag([IMU.arw, IMU.vrw, IMU.gb_psd, IMU.ab_psd].^2);
 
-fn = DCMbn * (imu.fb(1,:)' - ab_dyn - imu.ab_sta');
-wn = DCMbn * (imu.wb(1,:)' - gb_dyn - imu.gb_sta');
+fn = C_b_n*(IMU.fb(1,:)' - ab_dyn - IMU.ab_sta');
+wn = C_b_n*(IMU.wb(1,:)' - gb_dyn - IMU.gb_sta');
 
 % Vector to update matrix F
-upd = [gnss.vel(1,:) gnss.lat(1) gnss.h(1) fn' wn'];
+upd = [GPS.vel(1,:) GPS.lat(1) GPS.h(1) fn' wn'];
 
 % Update matrices F and G
-[kf.F, kf.G] = F_update(upd, DCMbn, imu);
+[kf.F, kf.G] = filter.F_update(upd, C_b_n, IMU);
 
 [RM,RN] = radius(gnss.lat(1));
 Tpr = diag([(RM + gnss.h(1)), (RN + gnss.h(1)) * cos(gnss.lat(1)), -1]);  % radians-to-meters

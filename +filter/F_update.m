@@ -1,4 +1,4 @@
-function  [F, G] = F_update(upd, DCMbn, imu)
+function  [F, G] = F_update(upd, DCMbn, IMU)
 % F_update: updates F and G matrices before the execution of Kalman filter.
 %
 % INPUT
@@ -55,7 +55,18 @@ Om = 7.292115e-5;
 I = eye(3);
 Z = zeros(3);
 
-[RM,RN] = radius(lat);
+a = 6378137.0;                  % WGS84 Equatorial radius in meters
+e = 0.0818191908425;            % WGS84 eccentricity
+
+e2 = e^2;
+den = 1 - e2 .* (sin(lat)).^2;
+
+% Meridian radius of curvature: radius of curvature for North-South motion.
+RM = a .* (1-e2) ./ (den).^(3/2);
+
+% Normal radius of curvature: radius of curvature for East-West motion.
+% AKA transverse radius.
+RN = a ./ sqrt(den);
 
 RO = sqrt(RN*RM) + h;
 
@@ -99,7 +110,7 @@ F13 = [a11 a12 a13; a21 a22 a23; a31 a32 a33;];
 
 %% VELOCITY MATRICES
 
-F21 = skewm(fn);
+F21 = formskewsym(fn);
 
 a11 = Vd / RO;
 a12 = -2 * ((Om * sin(lat)) + ((Ve / RO) * tan(lat))) ;
@@ -114,7 +125,7 @@ F22 = [a11 a12 a13; a21 a22 a23; a31 a32 a33;];
 
 e = 0.0818191908425;        % WGS84 eccentricity
 res = RN * sqrt( cos(lat)^2 + (1-e^2)^2 * sin(lat)^2);
-g = gravity(lat,h);
+g = imu.gravity(lat,h);
 g0 = g(3);
 
 a11 = -Ve * ((2 * Om * cos(lat)) + (Ve / (RO * (cos(lat))^2)));
@@ -158,17 +169,17 @@ F33 = [a11 a12 a13; a21 a22 a23; a31 a32 a33;];
 Fbg = I;
 Fba = I;
 
-if (isinf(imu.gb_corr))
+if (isinf(IMU.gb_corr))
     Fgg = Z;
 else
-    Fgg = -diag( 1./ imu.gb_corr);
+    Fgg = -diag( 1./ IMU.gb_corr);
     %     Fbg = -diag(sqrt (2 ./ imu.gb_corr .* imu.gb_dyn.^2));
 end
 
-if (isinf(imu.ab_corr))
+if (isinf(IMU.ab_corr))
     Faa = Z;
 else
-    Faa = -diag(1 ./ imu.ab_corr);
+    Faa = -diag(1 ./ IMU.ab_corr);
     %     Fba = -diag(sqrt (2 ./ imu.ab_corr .* imu.ab_dyn.^2));
 end
 

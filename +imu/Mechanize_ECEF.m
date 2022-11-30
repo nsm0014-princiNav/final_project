@@ -16,7 +16,7 @@ function [p_eb_e, v_eb_e, C_b2e] = Mechanize_ECEF(f_ib_b, omega_ib_b, dt, old_PV
 %______________________ Parameters and initialization ____________________%
 
 omega_ie = [0; 0; 7.292115*10^(-5)]; % (rad/s) rotation rate of Earth
-Omega_ie = Skew(omega_ie); % Skew of Earth Rotation
+Omega_ie = formskewsym(omega_ie); % Skew of Earth Rotation
 
 % deconstruct struct (haha)
 pos_in = old_PVA.pos(:,end);
@@ -24,7 +24,8 @@ vel_in = old_PVA.vel(:,end);
 C_b2e_in = old_PVA.C_b2e;
 
 % gravity model:
-g_ECEF = GravModel_ECEF(pos_in);
+[lla] = ecef2lla(pos_in','WGS84');
+g_ECEF = imu.gravity(lla(1), lla(2), lla(3));
 
 
 
@@ -40,8 +41,8 @@ if norm(alpha_ib) > 1.E-7
 % Rodrigues' Formula for precision with large attitude increments 
 % Equation 5.73 in Groves
     C_b2oldb = eye(3) + ... 
-             (sin(norm(alpha_ib))/norm(alpha_ib))*Skew(alpha_ib)+ ...
-   ((1 - cos(norm(alpha_ib)))/norm(alpha_ib)^2)*Skew(alpha_ib)*Skew(alpha_ib);
+             (sin(norm(alpha_ib))/norm(alpha_ib))*formskewsym(alpha_ib)+ ...
+   ((1 - cos(norm(alpha_ib)))/norm(alpha_ib)^2)*formskewsym(alpha_ib)*formskewsym(alpha_ib);
                 
 else
     C_b2oldb = eye(3) + Skew(omega_ib_b*dt);

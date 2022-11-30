@@ -1,4 +1,4 @@
-function ge = gravity(lat,long, h)
+function gn = gravity(lat,h)
 % gravity: calculates gravity vector in the navigation frame.
 %
 % INPUT
@@ -66,8 +66,4 @@ gn(:,2) = 0;
 gn(:,3) = g_0 .* (1 - (2 ./ RN) .* (1 + f .* (1 - 2 .* sinl2) +...
     (omega_ie_n^2 .* RN^2 .* RM ./ mu)) .* h + (3 .* h.^2 ./ RN^2));
 
-C_n_e = [-sin(lat)*cos(long), -sin(long), -cos(lat)*cos(long); ...
-         -sin(lat)*sin(long),  cos(long), -cos(lat)*sin(long);...
-          cos(lat)          ,      0    ,      -sin(lat)     ];
-ge = C_n_e*gn'; 
 end

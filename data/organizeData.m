@@ -93,3 +93,9 @@ Position = turn_data.novatel_local.odom.positionEcef';
 Velocity = turn_data.novatel_local.odom.velocityEcef';
 
 turn.GPS = table(Measurement,Time,Position,Velocity);
+%% Clearing unused variables
+clear static_data Steer_Angle Velocity Position Time Angular_Velocity Measurement Front_Left_Wheel Front_Right_Wheel random_data turn_data Linear_Acceleration
+%% Saving Organized Data
+save("data\static.mat","static")
+save("data\turn.mat","turn")
+save("data\random.mat","random")

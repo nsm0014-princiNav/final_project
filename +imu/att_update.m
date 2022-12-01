@@ -54,28 +54,27 @@ if nargin < 7, att_mode  = 'quaternion'; end
 
 %% Gyros output correction for Earth and transport rates
 
-om_ie_n = formskewsym_inv(omega_ie_n);
-om_en_n = formskewsym_inv(omega_en_n);
+om_ie_n = imu.skewm_inv(omega_ie_n);
+om_en_n = imu.skewm_inv(omega_en_n);
 wb = (wb - DCMbn' * (om_ie_n + om_en_n));  % Titterton, Eq. 3.29, p. 32
 
 if strcmp(att_mode, 'quaternion')
-    %% Quaternion update
+%% Quaternion update   
 
     qua   = qua_update(qua, wb, dt);    % Quaternion update
     qua   = qua / norm(qua);            % Brute-force normalization
     DCMbn = qua2dcm(qua);               % DCM update
     euler = qua2euler(qua);             % Euler angles update
-
+    
 elseif strcmp(att_mode, 'dcm')
-    %% DCM update
-
-    delta_theta = wb * dt;                  % Incremental Euler angles
+%% DCM update    
+    
+    delta_theta = wb * dt;                  % Incremental Euler angles 
     DCMbn = imu.dcm_update(DCMbn, delta_theta); % DCM update
-    [r,p,y] = dcm2angle(DCMbn,"XYZ");               % Euler angles update
-    qua   = eul2quat([r,p,y],"XYZ");               % Quaternion update
-    qua = qua';
+    euler = imu.dcm2euler(DCMbn);               % Euler angles update
+    qua   = imu.euler2qua(euler);               % Quaternion update
     qua   = qua / norm(qua);                % Brute-force normalization
-    euler = [r,p,y];
+    
 else
     error('att_update: no attitude update mode defined. Check the attitude update mode selected.')
 end

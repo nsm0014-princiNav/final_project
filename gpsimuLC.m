@@ -21,8 +21,8 @@ IMU.gb_psd = IMUbiases.gb_psd;                                              % gb
 IMU.ab_psd = IMUbiases.ab_psd;                                              % ab_psd: 1x3 accrs dynamic biases root-PSD (m/s^2/root-Hz);
 IMU.freq = 100;                                                             % freq: 1x1 sampling frequency (Hz).
 IMU.ini_align = [data.etalinCab.etalinCab.attitude.RPY(1,1) ...
-                 data.etalinCab.etalinCab.attitude.RPY(3,1) ...
-                 -data.etalinCab.etalinCab.attitude.RPY(2,1)];               % ini_align: 1x3 initial attitude at t(1).
+    data.etalinCab.etalinCab.attitude.RPY(3,1) ...
+    -data.etalinCab.etalinCab.attitude.RPY(2,1)];               % ini_align: 1x3 initial attitude at t(1).
 IMU.ini_align_error = [0 0 0];                                              % ini_align_err: 1x3 initial attitude errors at t(1).
 
 % GPS - TURN CASE
@@ -36,6 +36,8 @@ GPS.stdm = GPSbiases.stdm;                                                  % st
 GPS.stdv = GPSbiases.stdv;                                                  % stdv: 1x3 velocity standard deviations (m/s)
 GPS.larm = [0;0;0];                                                         % larm: 3x1 lever arm from IMU to GNSS antenna (x-fwd, y-right, z-down) (m)
 GPS.freq = 10;                                                              % freq: 1x1 sampling frequency (Hz)
+GPS.zupt_th = 0.5;
+GPS.zupt_win = 4;
 GPS.eps = 0.05;                                                             % eps: 1x1 time interval to compare current IMU time to current GNSS time vector (s)
 
 %% Pre-Allocating Filter Inputs/Outputs
@@ -129,19 +131,7 @@ upd = [GPS.vel(1,:) GPS.lat(1) GPS.h(1) fn' wn'];
 % Update matrices F and G
 [kf.F, kf.G] = filter.F_update(upd, C_b_n, IMU);
 
-
-a = 6378137.0;                  % WGS84 Equatorial radius in meters
-e = 0.0818191908425;            % WGS84 eccentricity
-
-e2 = e^2;
-den = 1 - e2 .* (sin(GPS.lat(1))).^2;
-
-% Meridian radius of curvature: radius of curvature for North-South motion.
-RM = a .* (1-e2) ./ (den).^(3/2);
-
-% Normal radius of curvature: radius of curvature for East-West motion.
-% AKA transverse radius.
-RN = a ./ sqrt(den);
+[RM,RN] = imu.radius(estiLat(1));
 
 Tpr = diag([(RM + GPS.h(1)), (RN + GPS.h(1)) * cos(GPS.lat(1)), -1]);  % radians-to-meters
 
@@ -165,6 +155,7 @@ v(1,:)  = kf.v';
 z(1,:)  = kf.z';
 b(1,:) = [gb_dyn', ab_dyn'];
 
+zupt_flag = false;
 %% Beginning Loosley Coupled Kalman Filter
 for i = 2:numIter_imu
 
@@ -203,7 +194,42 @@ for i = 2:numIter_imu
     estiRoll(i) = euler(1);
     estiPitch(i) = euler(2);
     estiYaw(i) = euler(3);
+    %% ZUPT DETECTION ALGORITHM
+    idz = floor( GPS.zupt_win / dti ); % Index to set ZUPT window time
 
+    if ( i > idz )
+
+        % Mean velocity value for the ZUPT window time
+        vel_m = mean (estiVelo(i-idz:i , :));
+
+        % If mean velocity value is under the ZUPT threshold velocity...
+        if (abs(vel_m) < GPS.zupt_th)
+
+            % Current attitude is equal to the mean of previous attitudes
+            % inside the ZUPT window time
+            estiRoll(i)  = mean (estiRoll(i-idz:i , :));
+            estiPitch(i) = mean (estiPitch(i-idz:i , :));
+            estiYaw(i)   = mean (estiYaw(i-idz:i , :));
+
+            % Current position is equal to the mean of previous positions
+            % inside the ZUPT window time
+            estiLat(i) = mean (estiLat(i-idz:i , :));
+            estiLong(i) = mean (estiLong(i-idz:i , :));
+            estiAlt(i)   = mean (estiAlt(i-idz:i , :));
+
+            % Alternative attitude ZUPT correction
+            % roll_e(i)  = (roll_e(i-idz , :));
+            % pitch_e(i) = (pitch_e(i-idz , :));
+            % yaw_e(i)   = (yaw_e(i-idz, :));
+            % lat_e(i) = (lat_e(i-idz:i , :));
+            % lon_e(i) = (lon_e(i-idz:i , :));
+            % h_e(i)   = (h_e(i-idz:i , :));
+
+            zupt_flag = true;
+
+            % fprintf(' z\n')       % DEBUG
+        end
+    end
     %% KALMAN FILTER UPDATE
 
     % Check if there is a new GNSS measurement to process at current INS time
@@ -213,19 +239,7 @@ for i = 2:numIter_imu
 
         %% MEASUREMENTS
 
-        % Meridian and normal radii of curvature update
-        a = 6378137.0;                  % WGS84 Equatorial radius in meters
-        e = 0.0818191908425;            % WGS84 eccentricity
-
-        e2 = e^2;
-        den = 1 - e2 .* (sin(estiLat(i))).^2;
-
-        % Meridian radius of curvature: radius of curvature for North-South motion.
-        RM = a .* (1-e2) ./ (den).^(3/2);
-
-        % Normal radius of curvature: radius of curvature for East-West motion.
-        % AKA transverse radius.
-        RN = a ./ sqrt(den);
+        [RM,RN] = imu.radius(estiLat(i));
 
         % Radians-to-meters matrix
         Tpr = diag([(RM + estiAlt(i)), (RN + estiAlt(i)) * cos(estiLat(i)), -1]);
@@ -248,9 +262,16 @@ for i = 2:numIter_imu
         [kf.F, kf.G] = filter.F_update(upd, C_b_n, IMU);
 
         % Matrix H update
-        kf.H = [ O I O O O ; ];
-        kf.R = diag([GPS.stdv]).^2;
-        kf.z = zv;
+        if(zupt_flag == false)
+            kf.H = [ O I O O O ;
+                O O Tpr O O ; ];
+            kf.R = diag([GPS.stdv GPS.stdm]).^2;
+            kf.z = [ zv';zp ];
+        else
+            kf.H = [ O I O O O ; ];
+            kf.R = diag([GPS.stdv]).^2;
+            kf.z = zv;
+        end
 
         % a posteriori states are forced to be zero (error-state approach)
         kf.xp = zeros(numStates , 1);
@@ -271,16 +292,17 @@ for i = 2:numIter_imu
         Xi = [qua(4)*eye(3) + qua_skew; -qua(1:3)'];
 
         % Crassidis, Eq. 7.34
-        qua = qua + 0.5 .* Xi * kf.xp(1:3);
+        qua_temp = qua;
+        qua = qua_temp + 0.5 .* Xi * kf.xp(1:3,end);
         qua = qua / norm(qua);          % Brute-force normalization
 
         % DCM correction
         C_b_n = quat2dcm(qua');
 
         % Attitude correction, method 2
-        estiRoll(i)  = estiRoll(i)  - kf.xp(1);
-        estiPitch(i) = estiPitch(i) - kf.xp(2);
-        estiYaw(i)   = estiYaw(i)   - kf.xp(3);
+        estiRoll(i)  = estiRoll(i)  - kf.xp(1,end);
+        estiPitch(i) = estiPitch(i) - kf.xp(2,end);
+        estiYaw(i)   = estiYaw(i)   - kf.xp(3,end);
 
         % Velocity correction
         estiVelo(i,1) = estiVelo(i,1) - kf.xp(4);
@@ -293,21 +315,29 @@ for i = 2:numIter_imu
         estiAlt(i)   = estiAlt(i)   - kf.xp(9);
 
         % Biases estimation
-        gb_dyn   = -kf.xp(10:12);
-        ab_dyn   = -kf.xp(13:15);
+        gb_dyn   = -kf.xp(10:12,end);
+        ab_dyn   = -kf.xp(13:15,end);
 
         % Matrices for later Kalman filter performance analysis
         xi(gdx,:) = kf.xi';
-        xp(gdx,:) = kf.xp';
+        xp(gdx,:) = kf.xp(:,end)';
         b(gdx,:) = [gb_dyn', ab_dyn'];
         A(gdx,:)  = reshape(kf.A,  1, numStates^2);
         Pi(gdx,:) = reshape(kf.Pi, 1, numStates^2);
         Pp(gdx,:) = reshape(kf.Pp, 1, numStates^2);
 
-        z(gdx,:)  = [ kf.z' 0 0 0 ]';
-        v(gdx,:)  = [ kf.v' 0 0 0 ]';
-        K(gdx,1:numStates*3) = reshape(kf.K, 1, numStates*3);
-        S(gdx,1:9)  = reshape(kf.S, 1, 3^2);
+        if(zupt_flag == false)
+            v(gdx,:)  = kf.v';
+            z(gdx,:)  = kf.z';
+            K(gdx,:)  = reshape(kf.K, 1, numStates*numSensors);
+            S(gdx,:)  = reshape(kf.S, 1, numSensors^2);
+        else
+            zupt_flag = false;
+            z(gdx,:)  = [ kf.z 0 0 0 ]';
+            v(gdx,:)  = [ kf.v(end,:) 0 0 0 ]';
+            K(gdx,1:numStates*3) = reshape(kf.K, 1, numStates*3);
+            S(gdx,1:9)  = reshape(kf.S, 1, 3^2);
+        end
 
     end
 end

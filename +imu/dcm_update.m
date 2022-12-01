@@ -40,7 +40,7 @@ function DCMbn = dcm_update(DCMbn, euler)
 % Author:  Rodrigo Gonzalez <rodralez@frm.utn.edu.ar>
 % URL:     https://github.com/rodralez/navego
 
-S = formskewsym(euler);
+S = imu.skewm(euler);
 mag_e = norm(euler);
 
 if mag_e < 1.E-8

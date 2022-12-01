@@ -19,23 +19,129 @@ eul_turn_LC = figure('Units','normalized','Position',[0.3 0.3 0.6 0.5]);
 eul_turn_LC_tl = tiledlayout(3,1,"TileSpacing","compact","Padding","compact");
 nexttile
 hold on
-plot(turn_data.memsense.imuTimeReference.time,wrapTo180(rad2deg(LC_turn.roll)))
-ylim([-180 180])
+plot(turn_data.memsense.imuTimeReference.time,wrapTo180(rad2deg(LC_turn.roll)-135),'LineWidth',1.25)
+ylim([-125 125])
+yticks([-90 0 90])
 title('Estimated Euler Angles: Turn Dataset')
 ylabel('Roll [deg]')
 ax = gca;
 ax.FontSize = 18;
 nexttile
 hold on
-plot(turn_data.memsense.imuTimeReference.time,wrapTo180(rad2deg(LC_turn.pitch)))
-ylim([-90 90])
+plot(turn_data.memsense.imuTimeReference.time,wrapTo180(rad2deg(LC_turn.pitch)),'LineWidth',1.25)
+ylim([-45 45])
 ylabel('Pitch [deg]')
+yticks([-45 0 45])
 ax = gca;
 ax.FontSize = 18;
 nexttile
 hold on
-plot(turn_data.memsense.imuTimeReference.time,wrapTo180(rad2deg(LC_turn.yaw)))
+plot(turn_data.memsense.imuTimeReference.time,wrapTo180(rad2deg(LC_turn.yaw)-90),'LineWidth',1.25)
+ylim([-180 180])
+yticks([-180 -90 0 90 180])
 ylabel('Yaw [deg]')
 xlabel('Time [s]')
+ax = gca;
+ax.FontSize = 18;
+
+eul_random_LC = figure('Units','normalized','Position',[0.3 0.3 0.6 0.5]);
+eul_random_LC_tl = tiledlayout(3,1,"TileSpacing","compact","Padding","compact");
+nexttile
+hold on
+plot(random_data.memsense.imuTimeReference.time,wrapTo180(rad2deg(LC_random.roll)-135),'LineWidth',1.25)
+ylim([-125 125])
+yticks([-90 0 90])
+title('Estimated Euler Angles: Random Dataset')
+ylabel('Roll [deg]')
+ax = gca;
+ax.FontSize = 18;
+nexttile
+hold on
+plot(random_data.memsense.imuTimeReference.time,wrapTo180(rad2deg(LC_random.pitch)),'LineWidth',1.25)
+ylim([-45 45])
+ylabel('Pitch [deg]')
+yticks([-45 0 45])
+ax = gca;
+ax.FontSize = 18;
+nexttile
+hold on
+plot(random_data.memsense.imuTimeReference.time,wrapTo180(rad2deg(LC_random.yaw)-90),'LineWidth',1.25)
+ylim([-180 180])
+yticks([-180 -90 0 90 180])
+ylabel('Yaw [deg]')
+xlabel('Time [s]')
+ax = gca;
+ax.FontSize = 18;
+
+eul_static_LC = figure('Units','normalized','Position',[0.3 0.3 0.6 0.5]);
+eul_static_LC_tl = tiledlayout(3,1,"TileSpacing","compact","Padding","compact");
+nexttile
+hold on
+plot(static_data.memsense.imuTimeReference.time,wrapTo180(rad2deg(LC_static.roll)-135),'LineWidth',1.25)
+ylim([-125 125])
+yticks([-90 0 90])
+title('Estimated Euler Angles: Random Dataset')
+ylabel('Roll [deg]')
+ax = gca;
+ax.FontSize = 18;
+nexttile
+hold on
+plot(static_data.memsense.imuTimeReference.time,wrapTo180(rad2deg(LC_static.pitch)),'LineWidth',1.25)
+ylim([-45 45])
+ylabel('Pitch [deg]')
+yticks([-45 0 45])
+ax = gca;
+ax.FontSize = 18;
+nexttile
+hold on
+plot(static_data.memsense.imuTimeReference.time,wrapTo180(rad2deg(LC_static.yaw)-90),'LineWidth',1.25)
+ylim([-180 180])
+yticks([-180 -90 0 90 180])
+ylabel('Yaw [deg]')
+xlabel('Time [s]')
+ax = gca;
+ax.FontSize = 18;
+
+% Next plot LLA
+lla_turn_LC = figure('Units','normalized','Position',[0.3 0.3 0.6 0.5]);
+geoplot(rad2deg(LC_turn.lat),rad2deg(LC_turn.lon),'LineWidth',2)
+geobasemap satellite
+title('Turn Dataset')
+ax = gca;
+ax.FontSize = 18;
+
+lla_random_LC = figure('Units','normalized','Position',[0.3 0.3 0.6 0.5]);
+geoplot(rad2deg(LC_random.lat),rad2deg(LC_random.lon),'LineWidth',2)
+geobasemap satellite
+title('Random Dataset')
+ax = gca;
+ax.FontSize = 18;
+
+lla_static_LC = figure('Units','normalized','Position',[0.3 0.3 0.6 0.5]);
+geoplot(rad2deg(LC_static.lat),rad2deg(LC_static.lon),'LineWidth',2)
+geobasemap satellite
+title('Static Dataset')
+ax = gca;
+ax.FontSize = 18;
+
+% Next plot raw gps
+lla_turn_gps = figure('Units','normalized','Position',[0.3 0.3 0.6 0.5]);
+geoplot((turn_data.novatel_local.llhPositionTagged.latitude),(turn_data.novatel_local.llhPositionTagged.longitude),'LineWidth',2)
+geobasemap satellite
+title('Turn Dataset')
+ax = gca;
+ax.FontSize = 18;
+
+lla_random_gps = figure('Units','normalized','Position',[0.3 0.3 0.6 0.5]);
+geoplot((random_data.novatel_local.llhPositionTagged.latitude),(random_data.novatel_local.llhPositionTagged.longitude),'LineWidth',2)
+geobasemap satellite
+title('Random Dataset')
+ax = gca;
+ax.FontSize = 18;
+
+lla_static_gps = figure('Units','normalized','Position',[0.3 0.3 0.6 0.5]);
+geoplot((static_data.novatel_local.llhPositionTagged.latitude),(static_data.novatel_local.llhPositionTagged.longitude),'LineWidth',2)
+geobasemap satellite
+title('Static Dataset')
 ax = gca;
 ax.FontSize = 18;

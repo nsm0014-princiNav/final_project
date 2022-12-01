@@ -4,9 +4,9 @@ function LC_Sol = gpsimuLC(static_data,data)
 [IMUbiases,GPSbiases] = imu.calcBias(static_data);
 
 % IMU - TURN CASE
-IMU.t = data.memsense.imuTimeReference.gpsSeconds';                    % t: Ix1 time vector [s]
-IMU.fb = data.memsense.imuTimeReference.linearAcceleration';           % fb: Ix3 accelerations vector in body frame XYZ (m/s^2).
-IMU.wb = data.memsense.imuTimeReference.angularVelocity';              % wb: Ix3 turn rates vector in body frame XYZ (radians/s).
+IMU.t = data.memsense.imuTimeReference.gpsSeconds';                         % t: Ix1 time vector [s]
+IMU.fb = [data.memsense.imuTimeReference.linearAcceleration(1,:);data.memsense.imuTimeReference.linearAcceleration(3,:);-data.memsense.imuTimeReference.linearAcceleration(2,:)]';                % fb: Ix3 accelerations vector in body frame XYZ (m/s^2).
+IMU.wb = [data.memsense.imuTimeReference.angularVelocity(1,:);data.memsense.imuTimeReference.angularVelocity(3,:);data.memsense.imuTimeReference.angularVelocity(2,:)]';                   % wb: Ix3 turn rates vector in body frame XYZ (radians/s).
 IMU.arw = IMUbiases.arw;                                                    % arw: 1x3 angle random walks (rad/s/root-Hz).
 IMU.vrw = IMUbiases.vrw;                                                    % vrw: 1x3 velocity random walks (m/s^2/root-Hz).
 IMU.g_std = IMUbiases.g_std;                                                % g_std: 1x3 gyros standard deviations (radians/s).
@@ -22,7 +22,7 @@ IMU.ab_psd = IMUbiases.ab_psd;                                              % ab
 IMU.freq = 100;                                                             % freq: 1x1 sampling frequency (Hz).
 IMU.ini_align = [data.etalinCab.etalinCab.attitude.RPY(1,1) ...
                  data.etalinCab.etalinCab.attitude.RPY(3,1) ...
-                 data.etalinCab.etalinCab.attitude.RPY(2,1)];               % ini_align: 1x3 initial attitude at t(1).
+                 -data.etalinCab.etalinCab.attitude.RPY(2,1)];               % ini_align: 1x3 initial attitude at t(1).
 IMU.ini_align_error = [0 0 0];                                              % ini_align_err: 1x3 initial attitude errors at t(1).
 
 % GPS - TURN CASE
@@ -231,12 +231,10 @@ for i = 2:numIter_imu
         Tpr = diag([(RM + estiAlt(i)), (RN + estiAlt(i)) * cos(estiLat(i)), -1]);
 
         % Position innovations in meters with lever arm correction
-        zp = Tpr * ([estiLat(i); estiLong(i); estiAlt(i);] - [GPS.lat(gdx); GPS.lon(gdx); GPS.h(gdx);]) ...
-            + (C_b_n * GPS.larm);
+        zp = Tpr * ([estiLat(i); estiLong(i); estiAlt(i);] - [GPS.lat(gdx); GPS.lon(gdx); GPS.h(gdx);]);
 
         % Velocity innovations with lever arm correction
-        zv = (estiVelo(i,:) - GPS.vel(gdx,:) - ((omega_ie_n + omega_en_n) * (C_b_n * GPS.larm ))' ...
-            + (C_b_n * formskewsym(wb_corrected) * GPS.larm)')';
+        zv = estiVelo(i,:) - GPS.vel(gdx,:);
 
         %% KALMAN FILTER
 

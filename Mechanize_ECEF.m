@@ -16,7 +16,7 @@ function [p_eb_e, v_eb_e, C_b2e] = Mechanize_ECEF(f_ib_b, omega_ib_b, dt, pos_in
 %______________________ Parameters and initialization ____________________%
 
 omega_ie = [0; 0; 7.292115*10^(-5)]; % (rad/s) rotation rate of Earth
-Omega_ie = Skew(omega_ie); % Skew of Earth Rotation
+Omega_ie = formskewsym(omega_ie); % Skew of Earth Rotation
 
 % gravity model:
 g_ECEF = GravModel_ECEF(pos_in);
@@ -32,11 +32,11 @@ if norm(alpha_ib) > 1.E-7
 % Rodrigues' Formula for precision with large attitude increments 
 % Equation 5.73 in Groves
     C_b2oldb = eye(3) + ... 
-             (sin(norm(alpha_ib))/norm(alpha_ib))*Skew(alpha_ib)+ ...
-   ((1 - cos(norm(alpha_ib)))/norm(alpha_ib)^2)*Skew(alpha_ib)*Skew(alpha_ib);
+             (sin(norm(alpha_ib))/norm(alpha_ib))*formskewsym(alpha_ib)+ ...
+   ((1 - cos(norm(alpha_ib)))/norm(alpha_ib)^2)*formskewsym(alpha_ib)*formskewsym(alpha_ib);
                 
 else
-    C_b2oldb = eye(3) + Skew(omega_ib_b*dt);
+    C_b2oldb = eye(3) + formskewsym(omega_ib_b*dt);
 end 
 
 % new attitude
@@ -47,7 +47,7 @@ C_b2e = C_b2e_in*C_b2oldb - Omega_ie*C_b2e_in.*dt;
 % Precision update utilizes average rotation matrix. Eqn 5.85
 Avg_C_b2e = C_b2e_in*C_b2oldb - 0.5*Omega_ie*C_b2e_in*dt; 
 
-f_ib_e = Avg_C_b2e*f_ib_b;
+f_ib_e = Avg_C_b2e*f_ib_b';
 
 
 

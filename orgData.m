@@ -35,6 +35,7 @@ REF.wx = tru(13,:);
 REF.wy = tru(14,:);
 REF.wz = tru(15,:);
 REF.ref_lla = ref_lla;
+REF.LLA = ecef2lla([REF.x;REF.y;REF.z]'); 
 
 end
 

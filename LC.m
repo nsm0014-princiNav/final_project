@@ -4,7 +4,7 @@ function [est] = LC(IMU,GPS,REF)
 
 pos_est = [GPS.x(1);GPS.y(1);GPS.z(1)];
 vel_est = zeros(3,1);
-C_b_e_est = eye(3);
+C_b_e_est = genDCM('deg',[0 0 0],[3 2 1]);
 lla = REF.ref_lla;
 lat_old = lla(1);
 
@@ -21,7 +21,9 @@ pMat_old = eye(15);
 
 pMat_est = pMat_old;
 
-
+est.pos(1:3,:) = [pos_est zeros(3,length(IMU.t)-1)];
+est.pos_lla(1:3,:) = [REF.ref_lla zeros(3,length(IMU.t)-1)];
+est.vel(1:3,:) = [vel_est zeros(3,length(IMU.t)-1)];
 %% Start Kalman Filter
 for i = 2:length(IMU.t)
 
@@ -41,6 +43,10 @@ for i = 2:length(IMU.t)
         oldGPSTime = IMU.t(i);
         GPS.t(idxGPS)
 
+        pos_est = [GPS.x(idxGPS);GPS.y(idxGPS);GPS.z(idxGPS)];
+        vel_est = [GPS.x_dot(idxGPS);GPS.y_dot(idxGPS);GPS.z_dot(idxGPS)];
+        C_b_e_est = genDCM('deg',[REF.roll(i) -REF.pitch(i) REF.yaw(i)],[1 2 3]);
+
 %         [C_b_e_est,vel_est,pos_est,imuBias_est,pMat_est] = ...
 %             KF([GPS.x(idxGPS) GPS.y(idxGPS) GPS.z(idxGPS)], ...
 %             [GPS.x_dot(idxGPS) GPS.y_dot(idxGPS) GPS.z_dot(idxGPS)], ...
@@ -56,12 +62,16 @@ for i = 2:length(IMU.t)
 
     end
 
-    lla = ecef2lla(pos_est');
-    lat_old = lla(1);
+%     lla = ecef2lla(pos_est');
+%     lat_old = lla(1);
 
 %% Saving and Exporting Data Structure
-
-
+est.pos(1:3,i) = pos_est;
+est.pos_lla(1:3,i) = ecef2lla(pos_est');
+est.vel(1:3,i) = vel_est;
+est.eul(1:3,i) = [atan2d(C_b_e_est(2,3),C_b_e_est(3,3)),...
+                  asind(C_b_e_est(1,3)),...
+                  atan2d(C_b_e_est(1,2),C_b_e_est(1,1))];
 end
 
 end

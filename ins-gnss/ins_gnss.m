@@ -318,7 +318,6 @@ for i = 2:LI
 
     % Check if there is a new GNSS measurement to process at current INS time
     gdx =  find (gnss.t >= (imu.t(i) - gnss.eps) & gnss.t < (imu.t(i) + gnss.eps));
-
     if ( ~isempty(gdx) && gdx > 1)
 
         %  gdx       % DEBUG

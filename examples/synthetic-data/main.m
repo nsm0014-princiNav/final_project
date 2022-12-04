@@ -61,8 +61,8 @@ roll = (tru_ned(7,:)').*D2R;
 pitch = (tru_ned(8,:)').*D2R;
 yaw = (tru_ned(9,:)').*D2R;
 for i = 1:length(t)
-DCMnb(:,:,i) = euler2dcm([roll(i) pitch(i) yaw(i)]);
-DCMnb_m(i,:) = [DCMnb(1,1,i) DCMnb(2,1,i) DCMnb(3,1,i) DCMnb(1,2,i) DCMnb(2,2,i) DCMnb(3,2,i) DCMnb(1,3,i) DCMnb(2,3,i) DCMnb(3,3,i)];
+    DCMnb(:,:,i) = euler2dcm([roll(i) pitch(i) yaw(i)]);
+    DCMnb_m(i,:) = [DCMnb(1,1,i) DCMnb(2,1,i) DCMnb(3,1,i) DCMnb(1,2,i) DCMnb(2,2,i) DCMnb(3,2,i) DCMnb(1,3,i) DCMnb(2,3,i) DCMnb(3,3,i)];
 end
 freq = 100;
 
@@ -189,35 +189,30 @@ gnss.eps = mean(diff(imu1.t)) / 3;
 
 rng('shuffle')                  % Pseudo-random seed reset
 
-if strcmp(GNSS_DATA, 'ON')      % If simulation of GNSS data is required...
+% If simulation of GNSS data is required...
 
 
-    gnss = gnss_m2r(ref.lat(1), ref.h(1), gnss); % GNSS manufacturer error units to SI units
+gnss = gnss_m2r(ref.lat(1), ref.h(1), gnss); % GNSS manufacturer error units to SI units
 
-    gnss = gnss_gen(ref, gnss);  % Generation of GNSS dataset from reference dataset
+gnss = gnss_gen(ref, gnss);  % Generation of GNSS dataset from reference dataset
 
-    save gnss.mat gnss
-else
-
-
-    load gnss.mat
-end
+save gnss.mat gnss
 
 %% IMU1 SYNTHETIC DATA
 
 rng('shuffle')                  % Pseudo-random seed reset
 
 
-    fb = acc_gen (ref, imu1);   % Generation of acc in the body frame
-    imu1.fb = fb;
+fb = acc_gen (ref, imu1);   % Generation of acc in the body frame
+imu1.fb = fb;
 
 
-    wb = gyro_gen (ref, imu1);  % Generation of gyro in the body frame
-    imu1.wb = wb;
+wb = gyro_gen (ref, imu1);  % Generation of gyro in the body frame
+imu1.wb = wb;
 
-    save imu1.mat imu1
+save imu1.mat imu1
 
-    clear wb fb;
+clear wb fb;
 
 %% NAVIGATION TIME
 
@@ -227,12 +222,12 @@ to = (ref.t(end) - ref.t(1));
 %% INS/GNSS INTEGRATION USING IMU1
 
 
-    % INS/GNSS integration
-    % ---------------------------------------------------------------------
-    nav1_e = ins_gnss(imu1, gnss, 'dcm');           % Attitude will be estimated by the DCM equations
-    % ---------------------------------------------------------------------
+% INS/GNSS integration
+% ---------------------------------------------------------------------
+nav1_e = ins_gnss(imu1, gnss, 'dcm');           % Attitude will be estimated by the DCM equations
+% ---------------------------------------------------------------------
 
-    save nav1_e.mat nav1_e
+save nav1_e.mat nav1_e
 
 %% PLOTTING
 

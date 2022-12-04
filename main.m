@@ -10,11 +10,11 @@ addpath convert\
 
 %% Loading Truth Data, Simulated IMU Measurements, and Simulated GPS Measurements
 load('data/ref.mat')
-load('data/imu1.mat')
-load('data/gnss.mat')
+load('data/simulatedIMU.mat')
+load('data/simulatedGPS.mat')
 
 %% Running Loosely Coupled IMU/GPS Sensor Fusion Algorithm
-stateEstimates = ins_gnss(imu1, gnss, 'dcm');
+stateEstimates = ins_gnss(simulatedIMU, simulatedGPS, 'dcm');
 
 %% PLOTTING
 plotData(stateEstimates,ref)

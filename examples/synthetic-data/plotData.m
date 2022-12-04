@@ -9,7 +9,7 @@ hold on
 plot3(esti.lon.*R2D, esti.lat.*R2D, esti.h,'LineWidth', weight)
 plot3(ref.lon.*R2D, ref.lat.*R2D, ref.h, '--k','LineWidth', weight)
 axis tight
-title('Dead Reckoned IMU Trajectory')
+title('Estimated Trajectory')
 xlabel('Longitude [deg]','Interpreter','latex')
 ylabel('Latitude [deg]','Interpreter','latex')
 zlabel('h [m]','Interpreter','latex')
@@ -29,7 +29,7 @@ plot(ref.t, wrapTo180(R2D.*ref.roll), '--k','LineWidth', weight)
 xlim([esti.tg(1) esti.tg(end)])
 ylabel('$$\phi$$ [deg]','Interpreter','latex')
 legend('IMU','Reference','Location','eastoutside')
-title('Dead Reckoned IMU Euler Angles')
+title('Estimated Euler Angles')
 ax = gca;
 ax.FontSize = 18;
 
@@ -93,7 +93,7 @@ hold on
 plot(esti.t, esti.vel(:,1),'LineWidth', 2)
 plot(ref.t, ref.vel(:,1), '--k','LineWidth', 2)
 ylabel('V_N [m/s]')
-title('Dead Reckoned IMU Velocities: NED')
+title('Estimated Velocities: NED')
 legend('IMU','Reference','Location','eastoutside')
 xlim([esti.tg(1) esti.tg(end)])
 ax = gca;
@@ -156,7 +156,7 @@ plot(esti.t, esti.lat.*R2D,'LineWidth', 2)
 plot(ref.t, ref.lat .*R2D, '--k','LineWidth', 2)
 xlim([esti.tg(1) esti.tg(end)])
 ylabel('$$\hat{\mathcal{L}}$$ [deg]','Interpreter','latex')
-title('Dead Reckoned IMU Position: LLA')
+title('Estimated Position: LLA')
 legend('IMU','Reference','Location','eastoutside')
 ax = gca;
 ax.FontSize = 18;
@@ -261,13 +261,13 @@ ax = gca;
 ax.FontSize = 18;
 
 %% Saving Figures
-saveas(fig_3D,"Figures/3D_trajectory.png")
-saveas(fig_eul,"Figures/Euler_Angles.png")
-saveas(fig_eul_err,"Figures/Euler_Angle_error.png")
-saveas(fig_vel,"Figures/NED_Velocities.png")
-saveas(fig_vel_err,"Figures/NED_Velocity_error.png")
-saveas(fig_pos,"Figures/LLA_Positions.png")
-saveas(fig_pos_err,"Figures/LLA_Position_error.png")
-saveas(fig_gyr_bias,"Figures/Gyroscope_Bias_Estimation.png")
-saveas(fig_acc_bias,"Figures/Acclerometer_Bias_Estimation.png")
+saveas(fig_3D,"figures/3D_trajectory.png")
+saveas(fig_eul,"figures/Euler_Angles.png")
+saveas(fig_eul_err,"figures/Euler_Angle_error.png")
+saveas(fig_vel,"figures/NED_Velocities.png")
+saveas(fig_vel_err,"figures/NED_Velocity_error.png")
+saveas(fig_pos,"figures/LLA_Positions.png")
+saveas(fig_pos_err,"figures/LLA_Position_error.png")
+saveas(fig_gyr_bias,"figures/Gyroscope_Bias_Estimation.png")
+saveas(fig_acc_bias,"figures/Acclerometer_Bias_Estimation.png")
 end

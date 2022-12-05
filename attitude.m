@@ -1,4 +1,4 @@
-function [qua, DCMbody2nav, euler] = att_update(wb_corrected, DCMbody2nav, omegaEci2Ecef_Nav_skew, omegaEci2Navi_Nav_skew, timeStepIMU)
+function [qua, DCMbody2nav, euler] = attitude(wb_corrected, DCMbody2nav, omegaEci2Ecef_Nav_skew, omegaEci2Navi_Nav_skew, timeStepIMU)
 
 %% Gyros output correction for Earth and transport rates
 omegaEci2Ecef_Nav = formskewsym_inv(omegaEci2Ecef_Nav_skew);
@@ -25,7 +25,9 @@ c3 = c3 / sqrt(c3'*c3);
 DCMbody2nav = [c1 , c2 , c3 ];
 
 % Updating Euler Angles for Plotting
-euler = dcm2euler(DCMbody2nav);
+euler(1,1)   =  atan( DCMbody2nav(3,2) ./ DCMbody2nav(3,3) );  
+euler(1,2) = -asin( DCMbody2nav(3,1) );                
+euler(1,3)    =  atan2( DCMbody2nav(2,1), DCMbody2nav(1,1) );   
 
 % Converting Euler Angles to Quaternions
 [~,theta_rad,k] = genAngleAxis(DCMbody2nav);

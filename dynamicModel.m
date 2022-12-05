@@ -1,4 +1,4 @@
-function  [F, G] = dynamicModel(northVelocity,eastVelocity,downVelocity,latitude,altitude,specificForce_Nav, DCMbn,RM,RN)
+function  [dynamicModel, noiseDistMat] = dynamicModel(northVelocity,eastVelocity,downVelocity,latitude,altitude,specificForce_Nav, DCMbn,RM,RN)
 a11 = 0;
 a12 = -( (7.292115e-5 * sin(latitude)) + (eastVelocity / (sqrt(RN*RM) + altitude) * tan(latitude)) );
 a13 = northVelocity / (sqrt(RN*RM) + altitude);
@@ -86,7 +86,7 @@ a33 = 0;
 F33 = [a11 a12 a13; a21 a22 a23; a31 a32 a33;];
 
 %% Forming Dynamic Model
-F = [F11 F12 F13 DCMbn zeros(3)  ;
+dynamicModel = [F11 F12 F13 DCMbn zeros(3)  ;
     F21  F22 F23 zeros(3)     DCMbn  ;
     F31  F32 F33 zeros(3)     zeros(3)      ;
     zeros(3)    zeros(3)   zeros(3)   diag([-0.001 -0.001 -0.001])   zeros(3)      ;
@@ -94,7 +94,7 @@ F = [F11 F12 F13 DCMbn zeros(3)  ;
     ];
 
 %% Forming Noise Distribution Matrix
-G = [DCMbn zeros(3)     zeros(3)   zeros(3) ;
+noiseDistMat = [DCMbn zeros(3)     zeros(3)   zeros(3) ;
     zeros(3)      DCMbn zeros(3)   zeros(3) ;
     zeros(3)      zeros(3)     zeros(3)   zeros(3) ;
     zeros(3)      zeros(3)     eye(3) zeros(3) ;

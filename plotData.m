@@ -61,26 +61,26 @@ fig_eul_err = figure('Units','normalized','Position',plotSize,'Name','Euler Angl
 tiledlayout(3,1)
 nexttile
 hold on
-plot(esti.t, wrapTo180(R2D.*(esti.roll - ref.roll)),'LineWidth', weight)
+plot(esti.t, abs(wrapTo180(R2D.*(esti.roll - ref.roll))),'LineWidth', weight)
 xlim([esti.tg(1) esti.tg(end)])
-ylabel('$$\Delta\phi$$ [deg]','Interpreter','latex')
+ylabel('$$\vert\Delta\phi\vert$$ [deg]','Interpreter','latex')
 title('Euler Angle Errors')
 ax = gca;
 ax.FontSize = 18;
 
 nexttile
 hold on
-plot(esti.t, wrapTo180(R2D.*(esti.pitch - ref.pitch)),'LineWidth', weight)
+plot(esti.t, abs(wrapTo180(R2D.*(esti.pitch - ref.pitch))),'LineWidth', weight)
 xlim([esti.tg(1) esti.tg(end)])
-ylabel('$$\Delta\theta$$ [deg]','Interpreter','latex')
+ylabel('$$\vert\Delta\theta\vert$$ [deg]','Interpreter','latex')
 ax = gca;
 ax.FontSize = 18;
 
 nexttile
 hold on
-plot(esti.t, wrapTo180(R2D.*(esti.yaw - ref.yaw)),'LineWidth', weight)
+plot(esti.t, abs(wrapTo180(R2D.*(esti.yaw - ref.yaw))),'LineWidth', weight)
 xlim([esti.tg(1) esti.tg(end)])
-ylabel('$$\Delta\psi$$ [deg]','Interpreter','latex')
+ylabel('$$\vert\Delta\psi\vert$$ [deg]','Interpreter','latex')
 xlabel('Time [s]')
 ax = gca;
 ax.FontSize = 18;
@@ -123,8 +123,8 @@ fig_vel_err = figure('Units','normalized','Position',plotSize,'Name','NED Veloci
 tiledlayout(3,1)
 nexttile
 hold on
-plot(esti.t, esti.vel(:,1) - ref.vel(:,1),'LineWidth', 2)
-ylabel('$$\Delta V_N$$ [m/s]','Interpreter','latex')
+plot(esti.t, abs(esti.vel(:,1) - ref.vel(:,1)),'LineWidth', 2)
+ylabel('$$\vert\Delta V_N\vert$$ [m/s]','Interpreter','latex')
 title('Velocity Errors')
 xlim([esti.tg(1) esti.tg(end)])
 ax = gca;
@@ -132,16 +132,16 @@ ax.FontSize = 18;
 
 nexttile
 hold on
-plot(esti.t, esti.vel(:,2) - ref.vel(:,2),'LineWidth', 2)
-ylabel('$$\Delta V_E$$ [m/s]','Interpreter','latex')
+plot(esti.t, abs(esti.vel(:,2) - ref.vel(:,2)),'LineWidth', 2)
+ylabel('$$\vert\Delta V_E\vert$$ [m/s]','Interpreter','latex')
 xlim([esti.tg(1) esti.tg(end)])
 ax = gca;
 ax.FontSize = 18;
 
 nexttile
 hold on
-plot(esti.t, esti.vel(:,3) - ref.vel(:,3),'LineWidth', 2)
-ylabel('$$\Delta V_D$$ [m/s]','Interpreter','latex')
+plot(esti.t, abs(esti.vel(:,3) - ref.vel(:,3)),'LineWidth', 2)
+ylabel('$$\vert\Delta V_D\vert$$ [m/s]','Interpreter','latex')
 xlim([esti.tg(1) esti.tg(end)])
 xlabel('Time [s]')
 ax = gca;
@@ -176,36 +176,39 @@ plot(esti.t, esti.h,'LineWidth', 2)
 plot(ref.t, ref.h, '--k','LineWidth', 2)
 xlim([esti.tg(1) esti.tg(end)])
 xlabel('Time [s]')
-ylabel('h [m]','Interpreter','latex')
+ylabel('$$\hat{h}$$ [m]','Interpreter','latex')
 ax = gca;
 ax.FontSize = 18;
 
 %% POSITION ERRORS
+
+estiPosition_ECEF = lla2ecef([esti.lat esti.lon esti.h],'WGS84');
+refPosition_ECEF = lla2ecef([ref.lat ref.lon ref.h],'WGS84');
 fig_pos_err = figure('Units','normalized','Position',plotSize,'Name','Position Errors');
 tiledlayout(3,1)
 nexttile
 hold on
-plot(esti.t, (esti.lat - ref.lat).*R2D,'LineWidth', 2)
+plot(esti.t, abs(estiPosition_ECEF(:,1) - refPosition_ECEF(:,1)),'LineWidth', 2)
 xlim([esti.tg(1) esti.tg(end)])
-ylabel('$$\Delta{\mathcal{L}}$$ [deg]','Interpreter','latex')
+ylabel('$$\vert\Delta x\vert$$ [m]','Interpreter','latex')
 title('Position Errors')
 ax = gca;
 ax.FontSize = 18;
 
 nexttile
 hold on
-plot(esti.t, (esti.lon - ref.lon).*R2D,'LineWidth', 2)
+plot(esti.t, abs(estiPosition_ECEF(:,2) - refPosition_ECEF(:,2)),'LineWidth', 2)
 xlim([esti.tg(1) esti.tg(end)])
-ylabel('$$\Delta{\lambda}$$ [deg]','Interpreter','latex')
+ylabel('$$\vert\Delta y\vert$$ [m]','Interpreter','latex')
 ax = gca;
 ax.FontSize = 18;
 
 nexttile
 hold on
-plot(esti.t, (esti.h - ref.h).*R2D,'LineWidth', 2)
+plot(esti.t, abs(estiPosition_ECEF(:,3) - refPosition_ECEF(:,3)),'LineWidth', 2)
 xlim([esti.tg(1) esti.tg(end)])
 xlabel('Time [s]')
-ylabel('$$\Delta h$$ [m]','Interpreter','latex')
+ylabel('$$\vert\Delta z\vert$$ [m]','Interpreter','latex')
 ax = gca;
 ax.FontSize = 18;
 
@@ -215,6 +218,7 @@ tiledlayout(3,1)
 nexttile
 plot(esti.tg, esti.b(:, 1).*R2D,'LineWidth',weight)
 xlim([esti.tg(1) esti.tg(end)])
+yticks([-0.005 0 0.005])
 ylabel('$$\hat{b}_{g_r}$$ [deg]','Interpreter','Latex')
 title('Estimated Gyroscope Biases')
 ax = gca;
@@ -223,6 +227,7 @@ ax.FontSize = 18;
 nexttile
 plot(esti.tg, esti.b(:, 2).*R2D,'LineWidth',weight)
 xlim([esti.tg(1) esti.tg(end)])
+yticks([-0.005 0 0.005])
 ylabel('$$\hat{b}_{g_p}$$ [deg]','Interpreter','Latex')
 ax = gca;
 ax.FontSize = 18;
@@ -230,6 +235,7 @@ ax.FontSize = 18;
 nexttile
 plot(esti.tg, esti.b(:, 3).*R2D,'LineWidth',weight)
 xlim([esti.tg(1) esti.tg(end)])
+yticks([-0.005 0 0.005])
 xlabel('Time [s]')
 ylabel('$$\hat{b}_{g_y}$$ [deg]','Interpreter','Latex')
 ax = gca;

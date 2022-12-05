@@ -44,7 +44,10 @@ DCMbody2nav = DCMnav2body';
 omegaEci2Ecef_Nav = (7.2921155e-5) .* [0          sin(estimatedLatitude(1))  0; ...
     -sin(estimatedLatitude(1))  0        -cos(estimatedLatitude(1)); ...
     0          cos(estimatedLatitude(1))  0;];
-[RM,RN] = radius(estimatedLatitude(1));
+
+den = 1 - 0.0818191908425^2 .* (sin(estimatedLatitude(1))).^2;
+RM = 6378137.0 .* (1-0.0818191908425^2) ./ (den).^(3/2);
+RN = 6378137.0 ./ sqrt(den);
 
 om_en_n(1,1) =   estimatedVelocities(1,2) / (RN + estimatedAltitude(1));              % North
 om_en_n(2,1) = -(estimatedVelocities(1,1) / (RM + estimatedAltitude(1)));             % East
@@ -67,7 +70,6 @@ specificForce_Nav = DCMbody2nav*simulatedIMU.fb(1,:)';
 % Update matrices F and G
 [dynamicModelMat, noiseDistMat] = dynamicModel(0,0,0, estimatedLatitude(1), estimatedAltitude(1),specificForce_Nav', DCMbody2nav,RM,RN);
 
-[RM,RN] = radius(simulatedGPS.lat(1));
 rad2range = diag([(RM + simulatedGPS.h(1)), (RN + simulatedGPS.h(1))*cos(simulatedGPS.lat(1)), -1]);  % radians-to-meters
 
 % Measurement Matrix
@@ -116,7 +118,9 @@ for i = 2:numIMUIterations
         0          cos(estimatedLatitude(i))  0];
     estimatedAltitude(i) = abs(estimatedAltitude(i));
 
-    [RM,RN] = radius(estimatedLatitude(i));
+    den = 1 - 0.0818191908425^2 .* (sin(estimatedLatitude(i))).^2;
+    RM = 6378137.0 .* (1-0.0818191908425^2) ./ (den).^(3/2);
+    RN = 6378137.0 ./ sqrt(den);
 
     om_en_n(1,1) =   estimatedVelocities(i,2)/(RN + estimatedAltitude(i));
     om_en_n(2,1) = -(estimatedVelocities(i,1)/(RM + estimatedAltitude(i)));
@@ -145,7 +149,9 @@ for i = 2:numIMUIterations
         measurementLLA = [simulatedGPS.lat(measurementUpdateIdx); simulatedGPS.lon(measurementUpdateIdx); simulatedGPS.h(measurementUpdateIdx)];
 
         % Meridian and normal radii of curvature update
-        [RM,RN] = radius(estimatedLatitude(i));
+        den = 1 - 0.0818191908425^2 .* (sin(estimatedLatitude(i))).^2;
+        RM = 6378137.0 .* (1-0.0818191908425^2) ./ (den).^(3/2);
+        RN = 6378137.0 ./ sqrt(den);
 
         % Radians-to-meters matrix
         rad2range = diag([(RM + estimatedAltitude(i)), (RN + estimatedAltitude(i)) * cos(estimatedLatitude(i)), -1]);
@@ -164,20 +170,17 @@ for i = 2:numIMUIterations
         % GPS Measurement Noise Matrix
         measNoiseMat = diag([simulatedGPS.stdv simulatedGPS.stdm]).^2;
 
-        % a posteriori states are forced to be zero (error-state approach)
-        errorState_plus = zeros(15 , 1);
-
         % Dynamic Model in Discrete
-        kf.A =  expm(dynamicModelMat * timeStepGPS);
+        discreteDynamicModelMat =  expm(dynamicModelMat * timeStepGPS);
 
         % IMU Processing Noise Matrix
-        kf.Qd = (noiseDistMat * procNoiseMat * noiseDistMat') .* timeStepGPS;
+        discreteProcNoiseMat = (noiseDistMat * procNoiseMat * noiseDistMat') .* timeStepGPS;
 
         % A Priori Error State Matrix
         errorState_minus = zeros(15, 1);
 
         % A Priori Covariance Matrix
-        pMinus = (kf.A * pPlus * kf.A') + kf.Qd;
+        pMinus = (discreteDynamicModelMat * pPlus * discreteDynamicModelMat') + discreteProcNoiseMat;
 
         % Kalman Gain
         kalmanGain = (pMinus * measurementMat') * (measNoiseMat + measurementMat * pMinus * measurementMat')^(-1) ;			% Kalman gain matrix

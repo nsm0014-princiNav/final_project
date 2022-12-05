@@ -14,7 +14,7 @@ load('data/simulatedIMU.mat')
 load('data/simulatedGPS.mat')
 
 %% Running Loosely Coupled IMU/GPS Sensor Fusion Algorithm
-stateEstimates = ins_gnss(simulatedIMU, simulatedGPS, 'dcm');
+stateEstimates = LC_EKF(simulatedIMU, simulatedGPS);
 
 %% PLOTTING
 plotData(stateEstimates,ref)

@@ -63,8 +63,7 @@ kf.xp = kf.xi + kf.K * kf.v;
 
 % Step 5, update the a posteriori covariance matrix, Pp
 kf.Pp = kf.Pi - kf.K * kf.S * kf.K';            % Eq. 3.10 from Särkkä
-% J = (I - S.K * S.H);                          % Joseph stabilized version
-% S.Pp = J * S.Pi * J' + S.K * S.R * S.K';      % Alternative implementation
+
 kf.Pp =  0.5 .* (kf.Pp + kf.Pp');               % Force Pp to be a symmetric matrix
 
 end

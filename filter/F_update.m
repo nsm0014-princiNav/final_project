@@ -31,7 +31,7 @@ function  [F, G] = F_update(upd, DCMbn, imu)
 % References:
 %
 %   Groves, P.D. (2013), Principles of GNSS, Inertial, and
-% Multisensor Integrated Navigation Systems (2nd Ed.). Artech House. 
+% Multisensor Integrated Navigation Systems (2nd Ed.). Artech House.
 % Matrix F from Eq. 14.63.
 %
 % 	Farrell, J. (2008). Aided Navigation: GPS With High Rate
@@ -158,19 +158,11 @@ F33 = [a11 a12 a13; a21 a22 a23; a31 a32 a33;];
 Fbg = I;
 Fba = I;
 
-if (isinf(imu.gb_corr))
-    Fgg = Z;
-else
-    Fgg = -diag( 1./ imu.gb_corr);
-    %     Fbg = -diag(sqrt (2 ./ imu.gb_corr .* imu.gb_dyn.^2));
-end
 
-if (isinf(imu.ab_corr))
-    Faa = Z;
-else
-    Faa = -diag(1 ./ imu.ab_corr);
-    %     Fba = -diag(sqrt (2 ./ imu.ab_corr .* imu.ab_dyn.^2));
-end
+Fgg = -diag( 1./ imu.gb_corr);
+
+
+Faa = -diag(1 ./ imu.ab_corr);
 
 % Eq. 14.63 from Groves
 F = [F11 F12 F13 DCMbn Z  ;

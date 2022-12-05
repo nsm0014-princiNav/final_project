@@ -48,6 +48,6 @@ om_en_n(1,1) =   Ve / (RN + h);              % North
 om_en_n(2,1) = -(Vn / (RM + h));             % East
 om_en_n(3,1) = -(Ve * tan(lat) / (RN + h));  % Down
 
-omega_en_n = skewm(om_en_n);
+omega_en_n = formskewsym(om_en_n);
 
 end

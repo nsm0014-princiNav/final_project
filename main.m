@@ -5,7 +5,6 @@ close all
 format shortg
 
 addpath imu\
-addpath filter\
 addpath convert\
 
 %% Loading Truth Data, Simulated IMU Measurements, and Simulated GPS Measurements

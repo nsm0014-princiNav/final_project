@@ -1,32 +1,32 @@
 function estimates = LC_EKF(imu, gnss)
 %% Pre-allocating arrays for speed
 % Length of time
-numIMUIterations = length(imu.t);                                           
+numIMUIterations = length(imu.t);
 numGPSIterations = length(gnss.t);
 
 % Attitude
-estimatedRoll = [imu.ini_align(1); zeros(numIMUIterations-1, 1)];                  
+estimatedRoll = [imu.ini_align(1); zeros(numIMUIterations-1, 1)];
 estimatedPitch = [imu.ini_align(2); zeros(numIMUIterations-1, 1)];
 estimatedYaw = [imu.ini_align(3); zeros(numIMUIterations-1, 1)];
 
 % Velocity
-estimatedVelocities = zeros(numIMUIterations, 3);                                         
+estimatedVelocities = zeros(numIMUIterations, 3);
 
 % Position
-estimatedLatitude = [gnss.lat(1); zeros(numIMUIterations-1, 1)];                         
+estimatedLatitude = [gnss.lat(1); zeros(numIMUIterations-1, 1)];
 estimatedLongitude = [gnss.lon(1); zeros(numIMUIterations-1, 1)];
 estimatedAltitude = [gnss.h(1); zeros(numIMUIterations-1, 1)];
 
 % Gravity
-estimatedGravity_Nav = [gravity(estimatedLatitude(1), estimatedAltitude(1)); zeros(numIMUIterations, 3)];                                         
+estimatedGravity_Nav = [gravity(estimatedLatitude(1), estimatedAltitude(1)); zeros(numIMUIterations, 3)];
 
 % Bias
 gyrDynamicBiases = imu.gb_dyn';
 accDynamicBiases = imu.ab_dyn';
-biases = [gyrDynamicBiases', accDynamicBiases'; zeros(numGPSIterations-1, 6)];                       
+biases = [gyrDynamicBiases', accDynamicBiases'; zeros(numGPSIterations-1, 6)];
 
 % Initial Rotation
-DCMnav2body = genDCM('rad',[estimatedYaw(1) estimatedPitch(1) estimatedRoll(1)],[3 2 1]); 
+DCMnav2body = genDCM('rad',[estimatedYaw(1) estimatedPitch(1) estimatedRoll(1)],[3 2 1]);
 DCMbody2nav = DCMnav2body';
 
 % Earth's Rotation Rate
@@ -44,20 +44,19 @@ kf.Q  = diag([imu.arw, imu.vrw, imu.gb_psd, imu.ab_psd].^2);
 
 % Converting initial body frame specific forces to nav frame
 specificForce_Nav = DCMbody2nav*imu.fb(1,:)';
-angularRate_Nav = DCMbody2nav*imu.wb(1,:)';
 
-% Vector to update matrix F
-upd = [gnss.vel(1,:) gnss.lat(1) gnss.h(1) specificForce_Nav' angularRate_Nav'];
+% Intial RM and RN
+[RM,RN] = radius(estimatedLatitude(1));
 
 % Update matrices F and G
-[kf.F, kf.G] = F_update(upd, DCMbody2nav, imu);
+[kf.F, kf.G] = dynamicModel(0,0,0, estimatedLatitude(1), estimatedAltitude(1),specificForce_Nav', DCMbody2nav,RM,RN);
 
 [RM,RN] = radius(gnss.lat(1));
 Tpr = diag([(RM + gnss.h(1)), (RN + gnss.h(1))*cos(gnss.lat(1)), -1]);  % radians-to-meters
 
 % Measurement Matrix
 kf.H = [zeros(3),  eye(3) , zeros(3), zeros(3), zeros(3);
-        zeros(3), zeros(3),   Tpr   , zeros(3), zeros(3)];
+    zeros(3), zeros(3),   Tpr   , zeros(3), zeros(3)];
 
 % GPS Measurement Noise Matrix
 kf.R = diag([gnss.stdv gnss.stdm]).^2;
@@ -66,7 +65,13 @@ kf.R = diag([gnss.stdv gnss.stdm]).^2;
 kf.z = zeros(6,1);
 
 % Propagate prior estimates to get xp(1) and Pp(1)
-kf = kf_update(kf);
+kf.K = (kf.Pi*kf.H')*(kf.R + kf.H*kf.Pi*kf.H')^(-1) ;			% Kalman gain matrix
+
+% Step 4, update the a posteriori state vector, xp
+kf.xp = kf.xi + kf.K*kf.z;
+
+% Step 5, update the a posteriori covariance matrix, Pp
+kf.Pp = kf.Pi - kf.K*(kf.R + kf.H * kf.Pi * kf.H')*kf.K';
 
 for i = 2:numIMUIterations
     %% A Priori Estimates (Time Update)
@@ -78,8 +83,7 @@ for i = 2:numIMUIterations
     fb_corrected = imu.fb(i,:)' - accDynamicBiases - imu.ab_sta';
 
     % Converting initial body frame specific forces to nav frame
-    specificForce_Nav = DCMbody2nav * fb_corrected;
-    angularRate_Nav = DCMbody2nav * wb_corrected;
+    specificForce_Nav = DCMbody2nav*fb_corrected;
 
     % Velocity update
     vel = vel_update(specificForce_Nav, estimatedVelocities(i-1,:), omegaEci2Ecef_Nav, omegaEci2Navi_Nav, estimatedGravity_Nav(i-1,:)', timeStepIMU);
@@ -101,13 +105,19 @@ for i = 2:numIMUIterations
     % Attitude update
     [estimatedQuaternion, DCMbody2nav, euler] = att_update(wb_corrected, DCMbody2nav, omegaEci2Ecef_Nav, omegaEci2Navi_Nav, timeStepIMU);
     estimatedRoll(i) = euler(1);
-    estimatedPitch(i)= euler(2);
+    estimatedPitch(i) = euler(2);
     estimatedYaw(i)  = euler(3);
 
     %% Only perform A Posteriori update if there are GPS Measurements at the current timestep
     measurementUpdateIdx = find(gnss.t >= (imu.t(i) - gnss.eps) & gnss.t < (imu.t(i) + gnss.eps));
 
     if ( ~isempty(measurementUpdateIdx) && measurementUpdateIdx > 1)
+        % Current GPS time step (time since last mesurement update)
+        timeStepGPS = gnss.t(measurementUpdateIdx) - gnss.t(measurementUpdateIdx-1);
+
+        % Grouping current estimated position
+        estimatedLLA = [estimatedLatitude(i); estimatedLongitude(i); estimatedAltitude(i)];
+        measurementLLA = [gnss.lat(measurementUpdateIdx); gnss.lon(measurementUpdateIdx); gnss.h(measurementUpdateIdx)];
 
         % Meridian and normal radii of curvature update
         [RM,RN] = radius(estimatedLatitude(i));
@@ -115,37 +125,47 @@ for i = 2:numIMUIterations
         % Radians-to-meters matrix
         Tpr = diag([(RM + estimatedAltitude(i)), (RN + estimatedAltitude(i)) * cos(estimatedLatitude(i)), -1]);
 
-        % Position innovations in meters
-        zp = Tpr * ([estimatedLatitude(i); estimatedLongitude(i); estimatedAltitude(i);] - [gnss.lat(measurementUpdateIdx); gnss.lon(measurementUpdateIdx); gnss.h(measurementUpdateIdx);]);
+        % Innovation Matrix
+        kf.z = [(estimatedVelocities(i,:) - gnss.vel(measurementUpdateIdx,:))'; ...
+            Tpr*(estimatedLLA - measurementLLA)];
 
-        % Velocity innovations
-        zv = (estimatedVelocities(i,:) - gnss.vel(measurementUpdateIdx,:))';
-
-        %% KALMAN FILTER
-
-        % Current GPS time step (time since last mesurement update)
-        timeStepGPS = gnss.t(measurementUpdateIdx) - gnss.t(measurementUpdateIdx-1);
-
-        % Vector to update matrix F
-        upd = [estimatedVelocities(i,:) estimatedLatitude(i) estimatedAltitude(i) specificForce_Nav' angularRate_Nav'];
-
-        % Matrices F and G update
-        [kf.F, kf.G] = F_update(upd, DCMbody2nav, imu);
+        % Dynamic Model (F) and Noise Distribution Matrix (G)
+        [kf.F, kf.G] = dynamicModel(estimatedVelocities(i,1), estimatedVelocities(i,2), estimatedVelocities(i,3), estimatedLatitude(i), estimatedAltitude(i), specificForce_Nav', DCMbody2nav,RM,RN);
 
         % Matrix H update
         kf.H = [zeros(3),  eye(3) , zeros(3), zeros(3), zeros(3);
             zeros(3), zeros(3),   Tpr   , zeros(3), zeros(3)];
+
+        % GPS Measurement Noise Matrix
         kf.R = diag([gnss.stdv gnss.stdm]).^2;
-        kf.z = [zv' zp']';
 
         % a posteriori states are forced to be zero (error-state approach)
         kf.xp = zeros(15 , 1);
-        % Execution of the extended Kalman filter
-        kf = kalman(kf, timeStepGPS);
+
+        % Dynamic Model in Discrete
+        kf.A =  expm(kf.F * timeStepGPS);
+
+        % IMU Processing Noise Matrix
+        kf.Qd = (kf.G * kf.Q * kf.G') .* timeStepGPS;
+
+        % A Priori Error State Matrix
+        kf.xi = zeros(15, 1);
+
+        % A Priori Covariance Matrix
+        kf.Pi = (kf.A * kf.Pp * kf.A') + kf.Qd;
+
+        % Kalman Gain
+        kf.K = (kf.Pi * kf.H') * (kf.R + kf.H * kf.Pi * kf.H')^(-1) ;			% Kalman gain matrix
+
+        % A Postierori Error State Vector
+        kf.xp = kf.K * kf.z;
+
+        % A Postierori Covariance Matrix
+        kf.Pp = kf.Pi - kf.K * (kf.R + kf.H * kf.Pi * kf.H') * kf.K';
 
         %% Correcting estimates with A Posteriori error state matrix xp
         % Quaternion
-        qua_skew = -skewm(estimatedQuaternion(1:3));
+        qua_skew = -formskewsym(estimatedQuaternion(1:3));
         Xi = [estimatedQuaternion(4)*eye(3) + qua_skew; -estimatedQuaternion(1:3)'];
         estimatedQuaternion = estimatedQuaternion + 0.5 .* Xi * kf.xp(1:3);
         estimatedQuaternion = estimatedQuaternion / norm(estimatedQuaternion);

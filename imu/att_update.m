@@ -1,18 +1,35 @@
-function [qua, DCMbn, euler] = att_update(wb, DCMbn, omega_ie_n, omega_en_n, dt)
-
-
+function [qua, DCMbody2nav, euler] = att_update(wb_corrected, DCMbody2nav, omegaEci2Ecef_Nav_skew, omegaEci2Navi_Nav_skew, timeStepIMU)
 
 %% Gyros output correction for Earth and transport rates
+omegaEci2Ecef_Nav = formskewsym_inv(omegaEci2Ecef_Nav_skew);
+omegaEci2Navi_Nav = formskewsym_inv(omegaEci2Navi_Nav_skew);
+wb_corrected = (wb_corrected - DCMbody2nav' * (omegaEci2Ecef_Nav + omegaEci2Navi_Nav));
 
-om_ie_n = skewm_inv(omega_ie_n);
-om_en_n = skewm_inv(omega_en_n);
-wb = (wb - DCMbn' * (om_ie_n + om_en_n));  % Titterton, Eq. 3.29, p. 32
+% Updating Rotation Matrix (Using High-Precision Method)
+A = expm(formskewsym(wb_corrected*timeStepIMU));
 
+DCMbody2nav = DCMbody2nav*A;
 
-delta_theta = wb * dt;                  % Incremental Euler angles
-DCMbn = dcm_update(DCMbn, delta_theta); % DCM update
-euler = dcm2euler(DCMbn);               % Euler angles update
-qua   = euler2qua(euler);               % Quaternion update
-qua   = qua / norm(qua);                % Brute-force normalization
+c1 = DCMbody2nav(:,1);
+c2 = DCMbody2nav(:,2);
+c3 = DCMbody2nav(:,3);
+
+c1 = c1 - 0.5 * (c1'*c2) * c2 - 0.5 * (c1'*c3) * c3 ;
+c2 = c2 - 0.5 * (c1'*c2) * c1 - 0.5 * (c2'*c3) * c3 ;
+c3 = c3 - 0.5 * (c1'*c3) * c1 - 0.5 * (c2'*c3) * c2 ;
+
+c1 = c1 / sqrt(c1'*c1);
+c2 = c2 / sqrt(c2'*c2);
+c3 = c3 / sqrt(c3'*c3);
+
+DCMbody2nav = [c1 , c2 , c3 ];
+
+% Updating Euler Angles for Plotting
+euler = dcm2euler(DCMbody2nav);
+
+% Converting Euler Angles to Quaternions
+[~,theta_rad,k] = genAngleAxis(DCMbody2nav);
+[q,~] = genQuat('rad',theta_rad,k);
+qua = [q(2:4);q(1)];
 
 end

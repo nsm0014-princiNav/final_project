@@ -18,7 +18,7 @@ estimatedLongitude = [gnss.lon(1); zeros(numIMUIterations-1, 1)];
 estimatedAltitude = [gnss.h(1); zeros(numIMUIterations-1, 1)];
 
 % Gravity
-gravity_nav2ecef = [gravity(estimatedLatitude(1), estimatedAltitude(1)); zeros(numIMUIterations, 3)];                                         
+estimatedGravity_Nav = [gravity(estimatedLatitude(1), estimatedAltitude(1)); zeros(numIMUIterations, 3)];                                         
 
 % Bias
 gyrDynamicBiases = imu.gb_dyn';
@@ -73,7 +73,7 @@ for i = 2:numIMUIterations
     % Current time step
     timeStepIMU = imu.t(i) - imu.t(i-1);
 
-    % Correcting IMU measurements with bias estimation
+    % Correcting IMU measurements with bias estimationp
     wb_corrected = imu.wb(i,:)' - gyrDynamicBiases - imu.gb_sta';
     fb_corrected = imu.fb(i,:)' - accDynamicBiases - imu.ab_sta';
 
@@ -82,7 +82,7 @@ for i = 2:numIMUIterations
     angularRate_Nav = DCMbody2nav * wb_corrected;
 
     % Velocity update
-    vel = vel_update(specificForce_Nav, estimatedVelocities(i-1,:), omegaEci2Ecef_Nav, omegaEci2Navi_Nav, gravity_nav2ecef(i-1,:)', timeStepIMU);
+    vel = vel_update(specificForce_Nav, estimatedVelocities(i-1,:), omegaEci2Ecef_Nav, omegaEci2Navi_Nav, estimatedGravity_Nav(i-1,:)', timeStepIMU);
     estimatedVelocities (i,:) = vel;
 
     % Position update
@@ -96,7 +96,7 @@ for i = 2:numIMUIterations
     omegaEci2Navi_Nav = transport_rate(estimatedLatitude(i), estimatedVelocities(i,1), estimatedVelocities(i,2), estimatedAltitude(i));
 
     % Gravity update
-    gravity_nav2ecef(i,:) = gravity(estimatedLatitude(i), estimatedAltitude(i));
+    estimatedGravity_Nav(i,:) = gravity(estimatedLatitude(i), estimatedAltitude(i));
 
     % Attitude update
     [estimatedQuaternion, DCMbody2nav, euler] = att_update(wb_corrected, DCMbody2nav, omegaEci2Ecef_Nav, omegaEci2Navi_Nav, timeStepIMU);

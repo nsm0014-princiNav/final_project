@@ -1,6 +1,6 @@
 function plotData(esti,ref)
 % plot size
-plotSize = [0.25 0.25 0.3 0.5];
+plotSize = [0.25 0.25 0.26 0.5];
 weight = 2;
 R2D = 180/pi;
 %% 3D TRAJECTORY
@@ -63,6 +63,7 @@ nexttile
 hold on
 plot(esti.t, abs(wrapTo180(R2D.*(esti.roll - ref.roll))),'LineWidth', weight)
 xlim([esti.tg(1) esti.tg(end)])
+ylim([0 8])
 ylabel('$$\vert\Delta\phi\vert$$ [deg]','Interpreter','latex')
 title('Euler Angle Errors')
 ax = gca;
@@ -71,6 +72,7 @@ ax.FontSize = 18;
 nexttile
 hold on
 plot(esti.t, abs(wrapTo180(R2D.*(esti.pitch - ref.pitch))),'LineWidth', weight)
+ylim([0 8])
 xlim([esti.tg(1) esti.tg(end)])
 ylabel('$$\vert\Delta\theta\vert$$ [deg]','Interpreter','latex')
 ax = gca;
@@ -79,6 +81,7 @@ ax.FontSize = 18;
 nexttile
 hold on
 plot(esti.t, abs(wrapTo180(R2D.*(esti.yaw - ref.yaw))),'LineWidth', weight)
+ylim([0 8])
 xlim([esti.tg(1) esti.tg(end)])
 ylabel('$$\vert\Delta\psi\vert$$ [deg]','Interpreter','latex')
 xlabel('Time [s]')
@@ -126,6 +129,7 @@ hold on
 plot(esti.t, abs(esti.vel(:,1) - ref.vel(:,1)),'LineWidth', 2)
 ylabel('$$\vert\Delta V_N\vert$$ [m/s]','Interpreter','latex')
 title('Velocity Errors')
+ylim([0 1])
 xlim([esti.tg(1) esti.tg(end)])
 ax = gca;
 ax.FontSize = 18;
@@ -134,6 +138,7 @@ nexttile
 hold on
 plot(esti.t, abs(esti.vel(:,2) - ref.vel(:,2)),'LineWidth', 2)
 ylabel('$$\vert\Delta V_E\vert$$ [m/s]','Interpreter','latex')
+ylim([0 1])
 xlim([esti.tg(1) esti.tg(end)])
 ax = gca;
 ax.FontSize = 18;
@@ -142,6 +147,7 @@ nexttile
 hold on
 plot(esti.t, abs(esti.vel(:,3) - ref.vel(:,3)),'LineWidth', 2)
 ylabel('$$\vert\Delta V_D\vert$$ [m/s]','Interpreter','latex')
+ylim([0 1])
 xlim([esti.tg(1) esti.tg(end)])
 xlabel('Time [s]')
 ax = gca;
@@ -182,33 +188,38 @@ ax.FontSize = 18;
 
 %% POSITION ERRORS
 
-estiPosition_ECEF = lla2ecef([esti.lat esti.lon esti.h],'WGS84');
-refPosition_ECEF = lla2ecef([ref.lat ref.lon ref.h],'WGS84');
-fig_pos_err = figure('Units','normalized','Position',plotSize,'Name','Position Errors');
-tiledlayout(3,1)
+estiPosition_ECEF = lla2ned([esti.lat esti.lon esti.h],[ref.lat(1) ref.lon(1) ref.h(1)],'ellipsoid');
+refPosition_ECEF = lla2ned([ref.lat ref.lon ref.h],[ref.lat(1) ref.lon(1) ref.h(1)],'ellipsoid');
+
+fig_pos_err_NE = figure('Units','normalized','Position',plotSize,'Name','Position Errors');
+tiledlayout(2,1)
 nexttile
 hold on
 plot(esti.t, abs(estiPosition_ECEF(:,1) - refPosition_ECEF(:,1)),'LineWidth', 2)
+ylim([0 0.03])
 xlim([esti.tg(1) esti.tg(end)])
-ylabel('$$\vert\Delta x\vert$$ [m]','Interpreter','latex')
-title('Position Errors')
+ylabel('$$\vert\Delta N\vert$$ [m]','Interpreter','latex')
+title('Position Errors: North and East')
 ax = gca;
 ax.FontSize = 18;
 
 nexttile
 hold on
 plot(esti.t, abs(estiPosition_ECEF(:,2) - refPosition_ECEF(:,2)),'LineWidth', 2)
+ylim([0 0.03])
 xlim([esti.tg(1) esti.tg(end)])
-ylabel('$$\vert\Delta y\vert$$ [m]','Interpreter','latex')
+ylabel('$$\vert\Delta E\vert$$ [m]','Interpreter','latex')
 ax = gca;
 ax.FontSize = 18;
 
-nexttile
+fig_pos_err_D = figure('Units','normalized','Position',[0.25 0.25 0.26 0.25],'Name','Position Errors');
 hold on
 plot(esti.t, abs(estiPosition_ECEF(:,3) - refPosition_ECEF(:,3)),'LineWidth', 2)
+ylim([0 1])
 xlim([esti.tg(1) esti.tg(end)])
+title('Position Errors: Down Only')
 xlabel('Time [s]')
-ylabel('$$\vert\Delta z\vert$$ [m]','Interpreter','latex')
+ylabel('$$\vert\Delta D\vert$$ [m]','Interpreter','latex')
 ax = gca;
 ax.FontSize = 18;
 
@@ -273,7 +284,8 @@ saveas(fig_eul_err,"figures/Euler_Angle_error.png")
 saveas(fig_vel,"figures/NED_Velocities.png")
 saveas(fig_vel_err,"figures/NED_Velocity_error.png")
 saveas(fig_pos,"figures/LLA_Positions.png")
-saveas(fig_pos_err,"figures/LLA_Position_error.png")
+saveas(fig_pos_err_NE,"figures/LLA_Position_error_NE.png")
+saveas(fig_pos_err_D,"figures/LLA_Position_error_D.png")
 saveas(fig_gyr_bias,"figures/Gyroscope_Bias_Estimation.png")
 saveas(fig_acc_bias,"figures/Acclerometer_Bias_Estimation.png")
 end

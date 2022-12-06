@@ -83,7 +83,7 @@ measNoiseMat = diag([simulatedGPS.stdv simulatedGPS.stdm]).^2;
 deltaZ = zeros(6,1);
 
 % Propagate prior estimates to get xp(1) and Pp(1)
-kalmanGain = (pMinus*measurementMat')*(measNoiseMat + measurementMat*pMinus*measurementMat')^(-1) ;			% Kalman gain matrix
+kalmanGain = (pMinus*measurementMat')*(measurementMat*pMinus*measurementMat' + measNoiseMat)^(-1) ;			% Kalman gain matrix
 
 % Step 4, update the a posteriori state vector, xp
 errorState_plus = errorState_minus + kalmanGain*deltaZ;

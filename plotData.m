@@ -14,7 +14,17 @@ xlabel('Longitude [deg]','Interpreter','latex')
 ylabel('Latitude [deg]','Interpreter','latex')
 zlabel('h [m]','Interpreter','latex')
 view(-45,25)
-legend('IMU','Reference','Location','eastoutside')
+legend('FVDM','Reference','Location','eastoutside')
+ax = gca;
+ax.FontSize = 18;
+grid
+
+%% GEOPLOT
+geoplotFig = figure('Units','normalized','Position',[0.25 0.25 0.5 0.5],'Name','3D Trajectory');
+geoplot(ref.lat.*R2D, ref.lon.*R2D, '--k','LineWidth', weight)
+hold on
+geoplot(esti.lat.*R2D, esti.lon.*R2D,'LineWidth', weight)
+% legend('Reference','Location','eastoutside')
 ax = gca;
 ax.FontSize = 18;
 grid
@@ -61,29 +71,28 @@ fig_eul_err = figure('Units','normalized','Position',plotSize,'Name','Euler Angl
 tiledlayout(3,1)
 nexttile
 hold on
-plot(esti.t, abs(wrapTo180(R2D.*(esti.roll - ref.roll))),'LineWidth', weight)
+plot(esti.t, (wrapTo180(R2D.*(esti.roll - ref.roll))),'LineWidth', weight)
 xlim([esti.tg(1) esti.tg(end)])
-ylim([0 8])
-ylabel('$$\vert\Delta\phi\vert$$ [deg]','Interpreter','latex')
+ylabel('$$\Delta\phi$$ [deg]','Interpreter','latex')
 title('Euler Angle Errors')
 ax = gca;
 ax.FontSize = 18;
 
 nexttile
 hold on
-plot(esti.t, abs(wrapTo180(R2D.*(esti.pitch - ref.pitch))),'LineWidth', weight)
-ylim([0 8])
+plot(esti.t, (wrapTo180(R2D.*(esti.pitch - ref.pitch))),'LineWidth', weight)
+
 xlim([esti.tg(1) esti.tg(end)])
-ylabel('$$\vert\Delta\theta\vert$$ [deg]','Interpreter','latex')
+ylabel('$$\Delta\theta$$ [deg]','Interpreter','latex')
 ax = gca;
 ax.FontSize = 18;
 
 nexttile
 hold on
-plot(esti.t, abs(wrapTo180(R2D.*(esti.yaw - ref.yaw))),'LineWidth', weight)
-ylim([0 8])
+plot(esti.t, (wrapTo180(R2D.*(esti.yaw - ref.yaw))),'LineWidth', weight)
+
 xlim([esti.tg(1) esti.tg(end)])
-ylabel('$$\vert\Delta\psi\vert$$ [deg]','Interpreter','latex')
+ylabel('$$\Delta\psi$$ [deg]','Interpreter','latex')
 xlabel('Time [s]')
 ax = gca;
 ax.FontSize = 18;
@@ -126,28 +135,28 @@ fig_vel_err = figure('Units','normalized','Position',plotSize,'Name','NED Veloci
 tiledlayout(3,1)
 nexttile
 hold on
-plot(esti.t, abs(esti.vel(:,1) - ref.vel(:,1)),'LineWidth', 2)
-ylabel('$$\vert\Delta V_N\vert$$ [m/s]','Interpreter','latex')
+plot(esti.t, (esti.vel(:,1) - ref.vel(:,1)),'LineWidth', 2)
+ylabel('$$\Delta V_N$$ [m/s]','Interpreter','latex')
 title('Velocity Errors')
-ylim([0 1])
+
 xlim([esti.tg(1) esti.tg(end)])
 ax = gca;
 ax.FontSize = 18;
 
 nexttile
 hold on
-plot(esti.t, abs(esti.vel(:,2) - ref.vel(:,2)),'LineWidth', 2)
-ylabel('$$\vert\Delta V_E\vert$$ [m/s]','Interpreter','latex')
-ylim([0 1])
+plot(esti.t, (esti.vel(:,2) - ref.vel(:,2)),'LineWidth', 2)
+ylabel('$$\Delta V_E$$ [m/s]','Interpreter','latex')
+
 xlim([esti.tg(1) esti.tg(end)])
 ax = gca;
 ax.FontSize = 18;
 
 nexttile
 hold on
-plot(esti.t, abs(esti.vel(:,3) - ref.vel(:,3)),'LineWidth', 2)
-ylabel('$$\vert\Delta V_D\vert$$ [m/s]','Interpreter','latex')
-ylim([0 1])
+plot(esti.t, (esti.vel(:,3) - ref.vel(:,3)),'LineWidth', 2)
+ylabel('$$\Delta V_D$$ [m/s]','Interpreter','latex')
+
 xlim([esti.tg(1) esti.tg(end)])
 xlabel('Time [s]')
 ax = gca;
@@ -195,31 +204,28 @@ fig_pos_err_NE = figure('Units','normalized','Position',plotSize,'Name','Positio
 tiledlayout(2,1)
 nexttile
 hold on
-plot(esti.t, abs(estiPosition_ECEF(:,1) - refPosition_ECEF(:,1)),'LineWidth', 2)
-ylim([0 0.03])
+plot(esti.t, (estiPosition_ECEF(:,1) - refPosition_ECEF(:,1)),'LineWidth', 2)
 xlim([esti.tg(1) esti.tg(end)])
-ylabel('$$\vert\Delta N\vert$$ [m]','Interpreter','latex')
+ylabel('$$\Delta N$$ [m]','Interpreter','latex')
 title('Position Errors: North and East')
 ax = gca;
 ax.FontSize = 18;
 
 nexttile
 hold on
-plot(esti.t, abs(estiPosition_ECEF(:,2) - refPosition_ECEF(:,2)),'LineWidth', 2)
-ylim([0 0.03])
+plot(esti.t, (estiPosition_ECEF(:,2) - refPosition_ECEF(:,2)),'LineWidth', 2)
 xlim([esti.tg(1) esti.tg(end)])
-ylabel('$$\vert\Delta E\vert$$ [m]','Interpreter','latex')
+ylabel('$$\Delta E$$ [m]','Interpreter','latex')
 ax = gca;
 ax.FontSize = 18;
 
 fig_pos_err_D = figure('Units','normalized','Position',[0.25 0.25 0.26 0.25],'Name','Position Errors');
 hold on
-plot(esti.t, abs(estiPosition_ECEF(:,3) - refPosition_ECEF(:,3)),'LineWidth', 2)
-ylim([0 1])
+plot(esti.t, (estiPosition_ECEF(:,3) - refPosition_ECEF(:,3)),'LineWidth', 2)
 xlim([esti.tg(1) esti.tg(end)])
 title('Position Errors: Down Only')
 xlabel('Time [s]')
-ylabel('$$\vert\Delta D\vert$$ [m]','Interpreter','latex')
+ylabel('$$\Delta D$$ [m]','Interpreter','latex')
 ax = gca;
 ax.FontSize = 18;
 

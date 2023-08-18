@@ -139,7 +139,7 @@ for i = 2:numIMUIterations
 
     %% Only perform A Posteriori update if there are GPS Measurements at the current timestep
     measurementUpdateIdx = find(simulatedGPS.t >= (simulatedIMU.t(i) - simulatedGPS.eps) & simulatedGPS.t < (simulatedIMU.t(i) + simulatedGPS.eps));
-
+ 
     if ( ~isempty(measurementUpdateIdx) && measurementUpdateIdx > 1)
         % Current GPS time step (time since last mesurement update)
         timeStepGPS = simulatedGPS.t(measurementUpdateIdx) - simulatedGPS.t(measurementUpdateIdx-1);

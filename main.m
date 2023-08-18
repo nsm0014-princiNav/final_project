@@ -5,9 +5,9 @@ close all
 format shortg
 
 %% Loading Truth Data, Simulated IMU Measurements, and Simulated GPS Measurements
-load('data/ref.mat')
-load('data/simulatedIMU.mat')
-load('data/simulatedGPS.mat')
+load('refTest/ref.mat')
+load('refTest/simulatedIMU.mat')
+load('refTest/simulatedGPS.mat')
 
 %% Running Loosely Coupled IMU/GPS Sensor Fusion Algorithm
 %% Pre-allocating arrays for speed
